@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>电商图片自动套版生成工具（纯 HTML + JS）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-soft: #111827;
+      --card: #020617;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.1);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: #1f2937;
+      --danger: #f97373;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --radius-sm: 6px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 50%, #020617 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+    .app {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: radial-gradient(circle at top left, rgba(56,189,248,0.12), transparent 55%),
+                  radial-gradient(circle at bottom right, rgba(129,140,248,0.15), transparent 55%),
+                  rgba(15,23,42,0.96);
+      border-radius: 24px;
+      border: 1px solid rgba(148,163,184,0.35);
+      box-shadow:
+        0 40px 80px rgba(15,23,42,0.85),
+        0 0 0 1px rgba(15,23,42,0.9);
+      padding: 28px 28px 24px;
+      backdrop-filter: blur(20px);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .badge {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(56,189,248,0.4);
+      background: rgba(15,23,42,0.9);
+      color: var(--accent);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 0 4px rgba(34,197,94,0.2);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    h1 span.emoji {
+      font-size: 22px;
+    }
+    .subtitle {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .tips {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+      max-width: 260px;
+      line-height: 1.5;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.1fr);
+      gap: 20px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.4), rgba(15,23,42,0.9));
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 18px 16px 14px;
+      box-shadow:
+        0 18px 45px rgba(15,23,42,0.8),
+        0 0 0 1px rgba(15,23,42,0.9);
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title span.icon {
+      font-size: 18px;
+    }
+    .card-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .field {
+      margin-bottom: 12px;
+    }
+    .field-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .field-label span {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .field-label small {
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .file-input {
+      padding: 10px 10px;
+      border-radius: var(--radius-md);
+      border: 1px dashed rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.8);
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .file-input input[type="file"] {
+      font-size: 12px;
+      color: var(--text);
+    }
+    .file-hint {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 4px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 90px;
+      max-height: 160px;
+      resize: vertical;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(148,163,184,0.5);
+      background: rgba(15,23,42,0.9);
+      color: var(--text);
+      padding: 10px 11px;
+      font-size: 13px;
+      line-height: 1.5;
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    textarea::placeholder {
+      color: #6b7280;
+    }
+    textarea:focus {
+      border-color: rgba(56,189,248,0.9);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.6);
+      background: #020617;
+    }
+    select {
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    }
+    select:focus {
+      border-color: rgba(56,189,248,0.9);
+      box-shadow: 0 0 0 1px rgba(56,189,248,0.6);
+      background: #020617;
+      outline: none;
+    }
+
+    .actions-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .generate-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      background: radial-gradient(circle at top left, #38bdf8, #0ea5e9);
+      color: white;
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.3),
+        0 16px 30px rgba(56,189,248,0.4);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, filter 0.1s ease;
+      white-space: nowrap;
+    }
+    .generate-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.4),
+        0 20px 45px rgba(56,189,248,0.55);
+      filter: brightness(1.05);
+    }
+    .generate-btn:active:not(:disabled) {
+      transform: translateY(0);
+      box-shadow:
+        0 0 0 1px rgba(56,189,248,0.4),
+        0 10px 22px rgba(56,189,248,0.45);
+      filter: brightness(0.98);
+    }
+    .generate-btn:disabled {
+      opacity: 0.6;
+      cursor: default;
+      box-shadow:
+        0 0 0 1px rgba(148,163,184,0.4),
+        0 8px 16px rgba(15,23,42,0.6);
+      background: linear-gradient(90deg, #4b5563, #6b7280);
+    }
+    .generate-btn span.icon {
+      font-size: 16px;
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #38bdf8;
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.25);
+      animation: pulse 1.2s infinite ease-out;
+    }
+    .status.error {
+      color: var(--danger);
+    }
+    .status.error .status-dot {
+      background: var(--danger);
+      box-shadow: 0 0 0 4px rgba(248,113,113,0.25);
+      animation: none;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
+
+    .gallery-info {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+    .image-card {
+      background: linear-gradient(180deg, rgba(15,23,42,0.6), rgba(15,23,42,0.95));
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(31,41,55,0.95);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 12px 22px rgba(15,23,42,0.9),
+        0 0 0 1px rgba(15,23,42,0.9);
+    }
+    .image-wrapper {
+      position: relative;
+      background: radial-gradient(circle at top, #111827, #020617);
+      aspect-ratio: 4 / 5;
+      overflow: hidden;
+    }
+    .image-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s ease;
+    }
+    .image-card:hover img {
+      transform: scale(1.02);
+    }
+    .image-meta {
+      padding: 8px 9px 7px;
+      border-top: 1px solid rgba(31,41,55,0.9);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .image-meta-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .image-title {
+      font-size: 12px;
+      color: #e5e7eb;
+    }
+    .image-subtitle {
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .download-btn {
+      border-radius: 999px;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.9);
+      color: #e5e7eb;
+      font-size: 11px;
+      padding: 4px 9px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    }
+    .download-btn:hover {
+      background: rgba(31,41,55,1);
+      border-color: rgba(209,213,219,0.9);
+      transform: translateY(-0.5px);
+    }
+    .download-btn span.icon {
+      font-size: 13px;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      font-size: 11px;
+      color: #6b7280;
+      text-align: right;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        padding: 16px;
+      }
+      .app {
+        padding: 18px 16px 18px;
+      }
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .tips {
+        text-align: left;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div class="title-block">
+      <div class="title-row">
+        <h1><span class="emoji">🎨</span> 电商图片自动套版生成工具</h1>
+        <div class="badge">
+          <span class="badge-dot"></span>
+          <span>即梦图像生成 · 后端服务</span>
+        </div>
+      </div>
+      <div class="subtitle">
+        上传参考图 + 产品图 + 卖点文案，一键生成多张同风格电商图，支持批量下载。
+      </div>
+    </div>
+    <div class="tips">
+      使用 <b>即梦图像生成</b> 服务。<br />
+      需要先启动后端服务器：<code>python server.py</code><br />
+      <span style="color: #fbbf24; font-weight: 500;">⚠️ 请确保后端服务已运行在 http://localhost:8000</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- 左侧：输入区 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            <span class="icon">📤</span>
+            上传素材 & 文案
+          </div>
+          <div class="card-subtitle">参考图支持多张，产品图单张，卖点文案会自动排版到画面中。</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>参考图（支持多张）</span>
+          <small>每张参考图会生成一张结果图</small>
+        </div>
+        <div class="file-input">
+          <input id="refImages" type="file" accept="image/*" multiple />
+        </div>
+        <div class="file-hint">建议上传你喜欢的电商广告图，用来"套版"风格和排版。</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>产品图（单张）</span>
+          <small>推荐白底或透明底 PNG</small>
+        </div>
+        <div class="file-input">
+          <input id="productImage" type="file" accept="image/*" />
+        </div>
+        <div class="file-hint">建议使用高分辨率产品图，背景越干净，效果越好。</div>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>卖点文案（可选）</span>
+          <small>留空则保持参考图原有文案</small>
+        </div>
+        <textarea id="sellingPoints" placeholder="示例：限时特价 / 买一送一 / 正品保障 / 七天无理由退换...（留空则保持参考图原有文案）"></textarea>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>图片尺寸</span>
+          <small>选择生成图片的尺寸</small>
+        </div>
+        <select id="imageSize" style="width: 100%; padding: 10px 11px; border-radius: var(--radius-md); border: 1px solid rgba(148,163,184,0.5); background: rgba(15,23,42,0.9); color: var(--text); font-size: 13px; outline: none;">
+          <option value="1K">1K (1024x1024)</option>
+          <option value="2K" selected>2K (2048x2048)</option>
+          <option value="4K">4K (4096x4096)</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <div class="field-label">
+          <span>清晰度</span>
+          <small>选择生成图片的清晰度级别</small>
+        </div>
+        <select id="imageQuality" style="width: 100%; padding: 10px 11px; border-radius: var(--radius-md); border: 1px solid rgba(148,163,184,0.5); background: rgba(15,23,42,0.9); color: var(--text); font-size: 13px; outline: none;">
+          <option value="standard">标准</option>
+          <option value="high" selected>高清</option>
+          <option value="ultra">超高清</option>
+        </select>
+      </div>
+
+      <div class="actions-row">
+        <button id="generateBtn" class="generate-btn">
+          <span class="icon">🚀</span>
+          <span>生成图片</span>
+        </button>
+        <div id="status" class="status">
+          <span class="status-dot"></span>
+          <span>等待生成...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧：结果区 -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">
+            <span class="icon">🎯</span>
+            生成结果
+          </div>
+          <div class="card-subtitle">每张参考图会对应生成一张新的电商图片，支持单张下载。</div>
+        </div>
+      </div>
+
+      <div class="gallery-info">
+        <div id="resultInfo">尚未生成图片</div>
+        <div style="font-size: 11px; color: #6b7280;">
+          提示：生成过程依赖网络和 API，可能需要几秒到几十秒。
+        </div>
+      </div>
+
+      <div id="gallery" class="gallery-grid"></div>
+
+      <div class="footer-note">
+        后端服务负责调用即梦 API，API Key 安全保存在服务器端。<br />
+        <span style="color: #f97373; font-weight: 500;">⚠️ 重要：请确保后端服务器已启动，并在 server.py 中配置火山引擎凭证</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  /***********************
+   * 配置：后端 API 地址 *
+   **********************/
+  // 后端服务器地址（即梦图像生成服务）
+  // 本地开发：http://localhost:8000/api/generate
+  // 生产环境：请修改为实际的后端服务器地址
+  // 可以通过环境变量或配置文件设置，避免硬编码
+  const BACKEND_API_URL = (() => {
+    // 优先使用环境变量（如果部署到支持环境变量的平台）
+    if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
+      return process.env.REACT_APP_API_URL;
+    }
+    // 检查是否有全局配置
+    if (typeof window !== 'undefined' && window.APP_CONFIG && window.APP_CONFIG.API_URL) {
+      return window.APP_CONFIG.API_URL;
+    }
+    // 默认使用本地开发地址
+    return "http://localhost:8000/api/generate";
+  })();
+
+  /******************
+   * 工具函数 *
+   ******************/
+  function setStatus(text, type = "normal") {
+    const statusEl = document.getElementById("status");
+    const span = statusEl.querySelector("span:nth-child(2)");
+    span.textContent = text;
+
+    if (type === "error") {
+      statusEl.classList.add("error");
+    } else {
+      statusEl.classList.remove("error");
+    }
+  }
+
+  function setResultInfo(text) {
+    const infoEl = document.getElementById("resultInfo");
+    infoEl.textContent = text;
+  }
+
+  function readFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target.result);
+      reader.onerror = e => reject(e);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function dataUrlToBase64(dataUrl) {
+    const parts = dataUrl.split(",");
+    return parts[1] || "";
+  }
+
+  function base64ToBlobUrl(base64, mimeType = "image/png") {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: mimeType });
+    return URL.createObjectURL(blob);
+  }
+
+  function appendImageCard(base64, index) {
+    const gallery = document.getElementById("gallery");
+    const card = document.createElement("div");
+    card.className = "image-card";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "image-wrapper";
+
+    const img = document.createElement("img");
+    img.src = "data:image/png;base64," + base64;
+
+    wrapper.appendChild(img);
+
+    const meta = document.createElement("div");
+    meta.className = "image-meta";
+
+    const left = document.createElement("div");
+    left.className = "image-meta-left";
+
+    const title = document.createElement("div");
+    title.className = "image-title";
+    title.textContent = "生成图片 #" + (index + 1);
+
+    const subtitle = document.createElement("div");
+    subtitle.className = "image-subtitle";
+    subtitle.textContent = "点击下载按钮保存到本地";
+
+    left.appendChild(title);
+    left.appendChild(subtitle);
+
+    const btn = document.createElement("button");
+    btn.className = "download-btn";
+    btn.innerHTML = '<span class="icon">⬇️</span><span>下载</span>';
+
+    btn.addEventListener("click", () => {
+      const url = base64ToBlobUrl(base64, "image/png");
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "generated_image_" + (index + 1) + ".png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    meta.appendChild(left);
+    meta.appendChild(btn);
+
+    card.appendChild(wrapper);
+    card.appendChild(meta);
+
+    gallery.appendChild(card);
+  }
+
+  /**********************
+   * Prompt 构建逻辑   *
+   *********************/
+  function buildPrompt(referenceStyleDesc, sellingPoints) {
+    return `
+请分析用户提供的电商参考图的风格和排版，并基于此生成一张新的电商宣传图。
+
+要求：
+1. 充分参考参考图在风格、构图、色调、光影、版式上的特征：${referenceStyleDesc}
+2. 保持整体视觉风格和排版逻辑基本一致，但允许在细节上有一定创意调整
+3. 参考图中的原产品，请完全替换为用户提供的产品图，保持产品形状、比例和质感真实
+4. 画面中的所有文案内容，请全部替换为以下卖点文案：
+   「${sellingPoints}」
+5. 新生成图片要适合用于电商主图或活动海报，视觉冲击力强，结构清晰，可读性好
+6. 图片中不要出现与原品牌相关的文字或 Logo，专注于用户的产品和文案
+
+请输出一张高质量、适合电商使用的产品宣传图片。
+    `.trim();
+  }
+
+  async function analyzeReferenceStyle(file) {
+    const nameHint = file.name ? `文件名：${file.name}` : "";
+    return `电商广告风格，布局紧凑，主体产品突出，背景具有一定的装饰元素。${nameHint}`;
+  }
+
+  /**********************
+   * 调用后端 API（即梦）*
+   *********************/
+  async function callBackendAPI(referenceImagesBase64, productImageBase64, sellingPoints, imageSize, imageQuality) {
+    try {
+      const payload = {
+        reference_images: referenceImagesBase64,
+        product_image: productImageBase64,
+        selling_points: sellingPoints || "",  // 允许为空
+        image_size: imageSize,
+        image_quality: imageQuality
+      };
+
+      const resp = await fetch(BACKEND_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!resp.ok) {
+        let errorData;
+        try {
+          errorData = await resp.json();
+        } catch (e) {
+          const text = await resp.text();
+          errorData = { error: text };
+        }
+        throw new Error(errorData.error || errorData.message || `HTTP ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "后端返回错误");
+      }
+
+      return data;
+    } catch (error) {
+      // 处理网络错误
+      if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+        throw new Error(
+          `❌ 无法连接到后端服务器！\n\n` +
+          `请确保：\n` +
+          `1. 后端服务器已启动（运行：python server.py）\n` +
+          `2. 后端运行在 http://localhost:8000\n` +
+          `3. 检查防火墙设置\n\n` +
+          `原始错误：${error.message}`
+        );
+      }
+      throw error;
+    }
+  }
+
+  /**********************
+   * 主流程：生成图片   *
+   *********************/
+  document.getElementById("generateBtn").addEventListener("click", async () => {
+    const refInput = document.getElementById("refImages");
+    const prodInput = document.getElementById("productImage");
+    const textInput = document.getElementById("sellingPoints");
+    const gallery = document.getElementById("gallery");
+    const btn = document.getElementById("generateBtn");
+
+    const refFiles = Array.from(refInput.files || []);
+    const prodFile = prodInput.files && prodInput.files[0];
+    const sellingPoints = (textInput.value || "").trim();
+
+    if (!refFiles.length) {
+      setStatus("请至少选择一张参考图。", "error");
+      return;
+    }
+    if (!prodFile) {
+      setStatus("请上传一张产品图。", "error");
+      return;
+    }
+    
+    // 获取尺寸和清晰度选项
+    const imageSize = document.getElementById("imageSize").value;
+    const imageQuality = document.getElementById("imageQuality").value;
+
+    setStatus(`正在读取图片文件...`, "normal");
+    setResultInfo("正在准备生成，请稍候...");
+    gallery.innerHTML = "";
+    btn.disabled = true;
+
+    try {
+      setStatus("正在读取图片文件...", "normal");
+      
+      // 读取所有参考图
+      const referenceImagesBase64 = [];
+      for (const refFile of refFiles) {
+        const refDataUrl = await readFileAsDataURL(refFile);
+        const refBase64 = dataUrlToBase64(refDataUrl);
+        referenceImagesBase64.push(refBase64);
+      }
+      
+      // 读取产品图
+      const prodDataUrl = await readFileAsDataURL(prodFile);
+      const prodBase64 = dataUrlToBase64(prodDataUrl);
+
+      setStatus(`正在调用后端 API 生成图片（共 ${refFiles.length} 张参考图）...`, "normal");
+
+      // 调用后端 API（一次性发送所有参考图）
+      const result = await callBackendAPI(referenceImagesBase64, prodBase64, sellingPoints, imageSize, imageQuality);
+
+      // 处理结果
+      const total = result.total || refFiles.length;
+      let successCount = 0;
+
+      for (let i = 0; i < result.results.length; i++) {
+        const item = result.results[i];
+        if (item.success && item.image_base64) {
+          appendImageCard(item.image_base64, item.index !== undefined ? item.index : i);
+          successCount++;
+        } else {
+          console.error(`第 ${i + 1} 张图片生成失败:`, item.error);
+          setStatus(`第 ${i + 1} 张参考图生成失败：${item.error || "未知错误"}`, "error");
+        }
+      }
+
+      if (successCount > 0) {
+        setResultInfo(`生成完成：成功 ${successCount} 张 / 共 ${total} 张。`);
+        setStatus("生成完成，如需重新生成可修改素材后再次点击。");
+      } else {
+        setResultInfo("未成功生成任何图片，请检查后端配置和网络情况。");
+        setStatus("全部生成失败，请检查后端服务器日志。", "error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("生成过程中发生错误：" + err.message, "error");
+      setResultInfo("生成失败，请检查错误提示。");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
